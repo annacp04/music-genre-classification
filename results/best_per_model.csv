@@ -1,0 +1,5 @@
+Model,Selector,mean_test_score,std_test_score,rank_test_score,model__C,model__class_weight,model__solver,selector__estimator__C,selector__n_components,selector__threshold,selector__k,selector__max_features,model__n_neighbors,model__p,model__weights,model__criterion,model__max_depth,model__min_samples_leaf,model__min_samples_split,model__activation,model__alpha,model__hidden_layer_sizes,model__learning_rate_init
+Logistic Regression,L1 logística,0.8112118242691491,0.013296092929257479,1,0.1,balanced,lbfgs,0.1,,,,,,,,,,,,,,,
+KNN,LDA,0.7882982198268824,0.030846195075064767,1,,,,,,,,,7.0,2.0,uniform,,,,,,,,
+ANN (MLP),Sin selección,0.7832026784256083,0.024531584297597678,1,,,,,,,,,,,,,,,,relu,0.001,"(128, 64)",0.001
+Decision Tree,RF importancia,0.6403397027600849,0.015694028545712377,1,,,,,,,,40.0,,,,entropy,10.0,1.0,2.0,,,,
