@@ -117,7 +117,7 @@ def print_grid_sizes(grids, inner_splits=10, outer_splits=10):
         n = len(ParameterGrid(grid))
         rows.append({
             "Model": name,
-            "Combinaciones": n,
+            "Combinations": n,
             "Fits (nested=False)": n * inner_splits,
             "Fits (nested=True)": n * inner_splits * (outer_splits + 1),
         })
@@ -130,13 +130,13 @@ def print_grid_sizes(grids, inner_splits=10, outer_splits=10):
 
 def selector_label(sel):
     if isinstance(sel, str):
-        return "Sin selección"
+        return "Without selection"
     if isinstance(sel, SelectKBest):
         return "ANOVA"
     if isinstance(sel, FilterRanker):
         return "Info mutua"
     if isinstance(sel, CorrelationFilter):
-        return "Correlación"
+        return "Correlation"
     if isinstance(sel, PCA):
         return "PCA var"
     if isinstance(sel, LinearDiscriminantAnalysis):

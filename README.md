@@ -24,18 +24,24 @@ Classification of music into 10 genres using classical machine learning. Several
 | Model | Val. accuracy (10-fold CV) | Test accuracy | Test macro-F1 |
 |---|---|---|---|
 | **Voting Ensemble** (soft: LR + RF + ET) | **0.837 ± 0.039** | **0.878** | **0.879** |
-| Logistic Regression + L1 selection | 0.820 ± 0.046 | 0.832 | 0.834 |
-| Decision Tree (worst) | 0.587 ± 0.068 | 0.643 | 0.648 |
+| Logistic Regression + PCA (99% variance) | 0.821 ± 0.045 | 0.842 | 0.843 |
+| Decision Tree (worst) | 0.603 ± 0.066 | 0.648 | 0.654 |
 
 The full table for all 9 models and the overfitting analysis (train/validation gaps, validation curves, learning curves and the effect of feature selection) are in `task_1.ipynb`.
 
 ### Task 2 — 30-second and 3-second features
 
-| Experiment | Result |
+| Dataset | Best model | Val. accuracy (10-fold CV) | Test accuracy | Test macro-F1 |
+|---|---|---|---|---|
+| 30 s clips | Extra Trees + correlation filter | 0.789 | 0.800 | 0.797 |
+| 3 s segments (CV grouped by song) | Extra Trees + correlation filter | 0.716 | 0.728 | 0.723 |
+
+| Research question | Answer |
 |---|---|
-| **Q5 — Is the 3 s accuracy real or inflated?** | Splitting segments at random lets segments of the same song appear in both train and test. This inflates accuracy by **≈17.5 points**: CV 0.872 vs 0.697, test 0.874 vs 0.684. |
-| **Q1 — Are 3 seconds enough?** | A single 3 s segment reaches ≈0.72–0.73 test accuracy, vs ≈0.82 for the full 30 s clip. |
-| **Q2 — Does combining short windows beat one long window?** | Aggregating the predictions of the 3 s segments of a song (mean, sum, vote, log-sum, max) gets close to the 30 s model (best 0.805 vs 0.820), but never beats it. |
+| **Q5 — Is the 3 s accuracy real or inflated?** | Inflated if segments are split at random: all 896 test songs then have other segments in the training set. Accuracy rises by **≈18 points** (CV 0.893 vs 0.716, test 0.905 vs 0.728). The real 3 s accuracy is ≈0.72–0.73. |
+| **Q1 — Are 3 seconds enough to identify a genre?** | Only partly. Every algorithm loses accuracy (on average −5.4 points in CV and −8.2 on test). Timbre-defined genres (classical, jazz, metal) are still recognised; rhythm-defined genres (disco, rock, reggae, hip-hop) suffer most. |
+| **Q2 — Does combining short windows beat one long window?** | No. Combining the 10 segments of a song (vote / log-sum 0.769 in CV) recovers about 70% of the gap but stays below the 30 s clip (0.789). The difference is not significant for mean, vote and log-sum (McNemar p = 0.07–0.14); max is significantly worse. |
+| **Q4 — Does the position within the clip matter?** | No. Single-segment accuracy only varies between 0.69 and 0.73 across the 10 positions (Cochran's Q, p = 0.29). |
 
 ---
 
@@ -51,6 +57,7 @@ music-genre-classification/
 ├── Preprocessing.py              ← class for cleaning, encoding and train/test split
 ├── FeatureSelection.py           ← factory of feature selection methods
 ├── Models.py                     ← class to build, tune and evaluate the models
+├── grid_config.py                ← hyperparameter grids and grid-search helpers
 │
 ├── GenreAll.csv                  ← dataset: Essentia descriptors (Task 1)
 ├── features_30_sec.csv           ← dataset: 30 s song descriptors (Task 2)
@@ -63,7 +70,7 @@ music-genre-classification/
 
 **`task_1.ipynb`** — Task 1. It loads and preprocesses `GenreAll.csv`, then defines the hyperparameter grid for every model × feature-selector combination and runs the grid search. It saves all the results to `results/`, re-evaluates the tuned model of each algorithm with 10-fold CV, and analyses overfitting with train vs validation gaps, validation curves (Logistic Regression, KNN, Decision Tree, Random Forest), learning curves (Voting Ensemble, Decision Tree). At the end it evaluates the models on the test set and selects the final model.
 
-**`task_2.ipynb`** — Task 2. It preprocesses the 30 s and 3 s datasets so that **both use exactly the same test songs**, and it checks this with an audit function. It then compares models and selectors on the 30 s features, tunes the best one with nested CV, and answers the research questions: data leakage in the 3 s dataset (Q5), whether 3 seconds are enough (Q1), and whether aggregating the 3 s segments beats the 30 s window (Q2), with per-genre analysis and confusion matrices.
+**`task_2.ipynb`** — Task 2. It preprocesses the 30 s and 3 s datasets so that **both use exactly the same test songs**, and it checks this with an audit function. It then runs the same grid search as Task 1 on the 30 s features and on the 3 s segments (with cross-validation grouped by song), checks overfitting with train vs validation gaps, evaluates the best models on the test set, and answers four research questions: data leakage in the 3 s dataset (Q5), whether 3 seconds are enough (Q1), whether combining the 3 s segments beats the 30 s window (Q2) and whether the position of the segment matters (Q4).
 
 **`exploration_datasets.ipynb`** — First look at the three datasets: shapes, class balance, feature distributions and correlations. It uses `ExploratoryDataAnalysis.py`.
 
@@ -93,6 +100,8 @@ Accessors: `get_data()`, `get_groups()` (song ID of each row) and `get_meta()` (
 | Embedded | `l1_logistic` (L1-regularised logistic regression), `rf` / `et` (tree importances) |
 
 The docstring at the top of the file explains why this subset of techniques was chosen.
+
+**`grid_config.py`** — Hyperparameter grid of each model (`MODEL_GRIDS`), the feature selectors tried with each one (`SELECTORS_PER_MODEL`) and helpers to build the grids for `Models.grid_search()` and summarise the results.
 
 **`Models.py`** — Class `Models`, the place where every pipeline (`scaler → selector → model`) is built, trained and evaluated. Scaling and feature selection are fitted inside each CV fold, so there is no data leakage. Main methods:
 
@@ -127,3 +136,27 @@ With `groups=` (song IDs), cross-validation uses `StratifiedGroupKFold`, so segm
 | `best_per_model_selector.csv` | Best configuration of each selector within each algorithm. |
 | `test_best_per_model.csv` | CV accuracy, test accuracy and test macro-F1 of the best configuration of each algorithm. |
 | `pipelines/*.joblib` | Tuned pipelines trained on the full training set, which can be loaded with `joblib.load()`. |
+
+---
+
+## How to run
+
+### Google Colab
+
+Add this cell at the top of a notebook so that the modules and datasets are available:
+
+```python
+!git clone https://github.com/annacp04/music-genre-classification.git
+%cd music-genre-classification
+```
+
+Then run all the cells in order. The two task notebooks are independent.
+
+### Locally
+
+```bash
+git clone https://github.com/annacp04/music-genre-classification.git
+cd music-genre-classification
+pip install numpy pandas scikit-learn scipy matplotlib seaborn joblib
+jupyter notebook
+```
