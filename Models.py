@@ -110,7 +110,7 @@ class Models:
                   that all segments belonging to the same song stay in the same fold.
         cv_mode:  "group" (by song, without leakage) | "random" (folds by segment,
                   WITH leakage: only to measure how much it inflates; see leakage_check()).
-        fold_ids: Fold assigned to each row externally (see make_song_folds) to
+        fold_ids: Fold assigned to each row externally to
                   validate multiple datasets using the same songs.
         """
         if isinstance(X_train, pd.DataFrame):
@@ -835,7 +835,7 @@ class Models:
     def oof_proba(self, name):
         """
         Probability for each segment predicted by a model that has NOT seen it
-        (out-of-fold), along with the fold assigned to each row. This is the input for SongAnalysis.
+        (out-of-fold), along with the fold assigned to each row.
         Returns (proba[n_rows, n_classes], folds[n_rows]).
         """
         proba = cross_val_predict(
