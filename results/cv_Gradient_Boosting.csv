@@ -1,0 +1,5 @@
+Model,Selector,mean_test_score,std_test_score,rank_test_score,model__learning_rate,model__subsample,selector__threshold
+Gradient Boosting,Correlación,0.792062714355708,0.022213111533168014,1,0.1,0.8,0.9
+Gradient Boosting,Sin selección,0.7895231095868038,0.03132536987777026,2,0.1,0.8,
+Gradient Boosting,Correlación,0.7780254777070065,0.02656134963311216,3,0.05,0.8,0.9
+Gradient Boosting,Sin selección,0.774203821656051,0.04098764469604122,4,0.05,0.8,

@@ -1,33 +1,22 @@
-Model,Selector,mean_test_score,std_test_score,rank_test_score,model__C,model__class_weight,model__solver,selector__estimator__C,selector__n_components,selector__threshold,selector__k,selector__max_features,model__n_neighbors,model__p,model__weights,model__criterion,model__max_depth,model__min_samples_leaf,model__min_samples_split,model__activation,model__alpha,model__hidden_layer_sizes,model__learning_rate_init
-ANN (MLP),Sin selección,0.7832026784256083,0.024531584297597678,1,,,,,,,,,,,,,,,,relu,0.001,"(128, 64)",0.001
-ANN (MLP),Correlación,0.7831945124938755,0.022154460237271495,2,,,,,,0.85,,,,,,,,,,relu,0.0001,"(128, 64)",0.001
-ANN (MLP),PCA var,0.7806549077249715,0.03408922362225654,4,,,,,0.99,,,,,,,,,,,tanh,0.0001,"(128, 64)",0.001
-ANN (MLP),L1 logística,0.7691572758451739,0.02233516532800681,32,,,,0.5,,,,,,,,,,,,tanh,0.0001,"(128,)",0.001
-ANN (MLP),LDA,0.7423975175567532,0.026176446647376967,103,,,,,,,,,,,,,,,,tanh,0.01,"(128, 64)",0.001
-ANN (MLP),RF importancia,0.7397272578801241,0.03821976742254941,119,,,,,,,,40.0,,,,,,,,relu,0.001,"(128, 64)",0.001
-ANN (MLP),ANOVA,0.7028090805160869,0.024654818231796872,192,,,,,,,30.0,,,,,,,,,relu,0.001,"(128, 64)",0.001
-ANN (MLP),Info mutua,0.6620120855789645,0.023859281885120143,234,,,,,,,40.0,,,,,,,,,relu,0.0001,"(128, 64)",0.001
-Decision Tree,RF importancia,0.6403397027600849,0.015694028545712377,1,,,,,,,,40.0,,,,entropy,10.0,1.0,2.0,,,,
-Decision Tree,Correlación,0.6402580434427568,0.03600587380524681,2,,,,,,0.95,,,,,,entropy,20.0,2.0,2.0,,,,
-Decision Tree,LDA,0.6339539441450269,0.03789054271965391,7,,,,,,,,,,,,gini,20.0,1.0,2.0,,,,
-Decision Tree,L1 logística,0.6160052261963089,0.06739274939320448,129,,,,0.05,,,,,,,,entropy,10.0,1.0,2.0,,,,
-Decision Tree,Sin selección,0.6122407316674832,0.016870862390307866,154,,,,,,,,,,,,entropy,10.0,2.0,10.0,,,,
-Decision Tree,Info mutua,0.5727176220806794,0.03563148893820298,468,,,,,,,40.0,,,,,gini,10.0,5.0,2.0,,,,
-Decision Tree,ANOVA,0.538265556099951,0.027173079882311824,754,,,,,,,30.0,,,,,gini,20.0,5.0,10.0,,,,
-Decision Tree,PCA var,0.5203331700146987,0.05115477526896117,918,,,,,0.9,,,,,,,entropy,10.0,2.0,2.0,,,,
-KNN,LDA,0.7882982198268824,0.030846195075064767,1,,,,,,,,,7.0,2.0,uniform,,,,,,,,
-KNN,L1 logística,0.7729789318961293,0.022089296647538652,14,,,,0.05,,,,,5.0,1.0,distance,,,,,,,,
-KNN,RF importancia,0.7449289563939245,0.03865947687135397,39,,,,,,,,40.0,7.0,1.0,distance,,,,,,,,
-KNN,Correlación,0.7372529805650825,0.018512410377572723,54,,,,,,0.95,,,5.0,1.0,distance,,,,,,,,
-KNN,Sin selección,0.7334313245141271,0.032717969007632464,60,,,,,,,,,3.0,1.0,distance,,,,,,,,
-KNN,ANOVA,0.7295606728727748,0.02896410746887717,72,,,,,,,40.0,,7.0,2.0,distance,,,,,,,,
-KNN,PCA var,0.719369590070227,0.008662910570532954,95,,,,,0.99,,,,7.0,2.0,distance,,,,,,,,
-KNN,Info mutua,0.670921117099461,0.018215490429189744,276,,,,,,,40.0,,13.0,1.0,distance,,,,,,,,
-Logistic Regression,L1 logística,0.8112118242691491,0.013296092929257479,1,0.1,balanced,lbfgs,0.1,,,,,,,,,,,,,,,
-Logistic Regression,PCA var,0.8048587293810223,0.01161709912554403,7,0.1,,lbfgs,,0.99,,,,,,,,,,,,,,
-Logistic Regression,Sin selección,0.8023109586803855,0.01038199231684886,11,0.1,balanced,lbfgs,,,,,,,,,,,,,,,,
-Logistic Regression,Correlación,0.7971990854156459,0.010076442115742969,18,0.1,balanced,lbfgs,,,0.95,,,,,,,,,,,,,
-Logistic Regression,LDA,0.7564102564102564,0.032353582287913164,63,0.01,balanced,lbfgs,,,,,,,,,,,,,,,,
-Logistic Regression,ANOVA,0.7512902172137841,0.017349244085676483,70,1.0,,lbfgs,,,,40.0,,,,,,,,,,,,
-Logistic Regression,RF importancia,0.7474685611628287,0.018897278744111186,74,0.1,,lbfgs,,,,,40.0,,,,,,,,,,,
-Logistic Regression,Info mutua,0.7117181120365833,0.018885588141305556,99,1.0,balanced,lbfgs,,,,40.0,,,,,,,,,,,,
+Model,Selector,mean_test_score,std_test_score,rank_test_score,model__C,selector__estimator__C,selector__n_components,selector__k,model__n_neighbors,model__weights,model__criterion,model__max_depth,model__min_samples_leaf,selector__max_features,selector__threshold,model__alpha,model__hidden_layer_sizes,model__max_features,model__learning_rate,model__subsample,model__estimator__max_depth,model__n_estimators,model__voting
+ANN (MLP),Sin selección,0.7832026784256083,0.024531584297597678,1,,,,,,,,,,,,0.001,"(128, 64)",,,,,,
+ANN (MLP),PCA var,0.7806222439980401,0.04153759928109425,3,,,0.99,,,,,,,,,0.001,"(128, 64)",,,,,,
+AdaBoost,Sin selección,0.760223746529479,0.019334877854955846,1,,,,,,,,,,,,,,,0.5,,3.0,200.0,
+Decision Tree,RF importancia,0.6224971419238935,0.03103153337418344,1,,,,,,,entropy,10.0,1.0,50.0,,,,,,,,,
+Decision Tree,Correlación,0.6083129185040013,0.047607692950987025,4,,,,,,,entropy,10.0,1.0,,0.9,,,,,,,,
+Decision Tree,Sin selección,0.6032663726931242,0.031204785118203564,7,,,,,,,entropy,,1.0,,,,,,,,,,
+Extra Trees,Correlación,0.8048423975175568,0.034346576736296146,1,,,,,,,,,1.0,,0.9,,,0.2,,,,,
+Extra Trees,Sin selección,0.7933447656377592,0.03696539343476304,2,,,,,,,,,3.0,,,,,0.2,,,,,
+Gradient Boosting,Correlación,0.792062714355708,0.022213111533168014,1,,,,,,,,,,,0.9,,,,0.1,0.8,,,
+Gradient Boosting,Sin selección,0.7895231095868038,0.03132536987777026,2,,,,,,,,,,,,,,,0.1,0.8,,,
+KNN,LDA,0.7882982198268824,0.030846195075064767,1,,,,,7.0,uniform,,,,,,,,,,,,,
+KNN,L1 logística,0.7525396047689041,0.030073945892060642,9,,0.1,,,7.0,distance,,,,,,,,,,,,,
+KNN,Sin selección,0.7231912461211825,0.014186214225543047,17,,,,,7.0,distance,,,,,,,,,,,,,
+KNN,PCA var,0.719369590070227,0.008662910570532954,18,,,0.99,,7.0,distance,,,,,,,,,,,,,
+Logistic Regression,L1 logística,0.8112118242691491,0.013296092929257479,1,0.1,0.1,,,,,,,,,,,,,,,,,
+Logistic Regression,PCA var,0.8048587293810223,0.01161709912554403,2,0.1,,0.99,,,,,,,,,,,,,,,,
+Logistic Regression,Sin selección,0.8023109586803855,0.01038199231684886,3,0.1,,,,,,,,,,,,,,,,,,
+Logistic Regression,ANOVA,0.7512902172137841,0.017349244085676483,13,1.0,,,40.0,,,,,,,,,,,,,,,
+Random Forest,Sin selección,0.7984729707659645,0.04548619249638499,1,,,,,,,,,3.0,,,,,0.2,,,,,
+Random Forest,Correlación,0.7908051608688551,0.04001714491565215,4,,,,,,,,,1.0,,0.9,,,0.2,,,,,
+Voting Ensemble,Sin selección,0.8202106810387064,0.02561682329622786,1,,,,,,,,,,,,,,,,,,,soft

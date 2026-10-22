@@ -1,0 +1,3 @@
+Model,Selector,mean_test_score,std_test_score,rank_test_score,model__voting,model__weights
+Voting Ensemble,Sin selección,0.8202106810387064,0.02561682329622786,1,soft,
+Voting Ensemble,Sin selección,0.8138330883553813,0.0313056050116139,2,soft,"[2, 1, 1]"
