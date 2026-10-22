@@ -1,33 +1,3 @@
-"""
-
-We are aware that the course covered a wider range of feature selection techniques, but we deliberately restricted our experiments to a representative subset, given the characteristics of our dataset (about 900 samples, 250 highly correlated Essentia audio descriptors, and 10 genres) and the cost of crossing every selector with nine models and their hyperparameter grids. We kept one baseline (no selection) plus one or two methods from each relevant family: a correlation filter to remove redundancy, ANOVA and mutual information as complementary ranking filters (linear and non-linear), PCA and LDA as feature extraction methods, and L1-regularized logistic regression and random forest importances as embedded methods. The discarded techniques were excluded because they were largely redundant with the retained ones (e.g., chi-squared and Pearson behave similarly to ANOVA), unreliable at this sample size (e.g., discretization-based criteria such as information gain, OneR, and consistency), or of little use on this data (variance threshold). We also left out wrapper methods (forward, backward, beam search, and stochastic searches), whose computational cost is prohibitive at this scale and which tend to overfit the selection criterion when the number of samples is small.
-
-Selección de características reducida, compatible con el sklearn Pipeline.
-
-Solo incluye las técnicas que merece la pena probar con ~900 muestras y
-~250 features (Essentia):
-
-Método en make()
-
-Referencia
-    Sin selección ................ "none"
-
-Extracción (no selección)
-    PCA (k = % varianza) ......... "pca_var"
-    LDA (supervisada) ............ "lda"
-
-Filtros: ranking individual
-    Distancia .................... "anova" (Fisher/F)
-    Información .................. "mutual_info"
-
-Filtros: redundancia
-    Correlación (|r| > umbral) ... "correlation"
-
-Embebidos
-    Optimización directa ......... "l1_logistic"
-    Importancias ................. "rf", "et"
-"""
-
 import warnings
 
 import numpy as np
@@ -44,19 +14,31 @@ from sklearn.feature_selection import (
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
 
+"""
 
-# =====================================================================
-# Utilidades (cálculo de puntuaciones)
-# =====================================================================
+We are aware that the course covered a wider range of feature selection techniques,
+but we deliberately restricted our experiments to a representative subset,
+given the characteristics of our dataset and the cost of combining every selector
+with nine models and their hyperparameter grids.
+
+We kept one baseline (no selection) plus one or two methods from each relevant family:
+a correlation filter to remove redundancy, ANOVA and mutual information as complementary
+ranking filters (linear and non-linear), PCA and LDA as feature extraction methods,
+and L1-regularized logistic regression and random forest importances as embedded methods.
+
+"""
+
+
+# Utilities (score calculation)
 def _anova_score(X, y):
-    """F de ANOVA; las columnas constantes (NaN) pasan a 0."""
+    """ANOVA F-score; constant columns (NaN) are converted to 0."""
     with warnings.catch_warnings(), np.errstate(invalid="ignore", divide="ignore"):
         warnings.simplefilter("ignore")
         return np.nan_to_num(f_classif(X, y)[0], nan=0.0, posinf=0.0)
 
 
 def _safe_abs_corr(X):
-    """|Pearson| entre columnas; las constantes quedan con 0."""
+    """Absolute Pearson correlation between columns; constant columns are set to 0."""
     with np.errstate(invalid="ignore", divide="ignore"):
         return np.nan_to_num(np.abs(np.corrcoef(X, rowvar=False)))
 
@@ -68,7 +50,7 @@ def _filter_scores(name, X, y, random_state):
 
 
 def _l1_logistic(C, random_state):
-    """Logística L1 (saga). En sklearn >= 1.8 L1 se pide con l1_ratio=1."""
+    """L1 logistic regression (saga). In sklearn >= 1.8, L1 is specified using l1_ratio=1."""
     import sklearn
 
     major, minor = (int(v) for v in sklearn.__version__.split(".")[:2])
@@ -78,11 +60,9 @@ def _l1_logistic(C, random_state):
     return LogisticRegression(penalty="l1", **common)
 
 
-# =====================================================================
-# Selectores propios (compatibles con Pipeline)
-# =====================================================================
+# Custom selectors
 class _SupportSelector(BaseEstimator, TransformerMixin):
-    """Base: las subclases fijan self.support_ (máscara booleana) en fit."""
+    """Base class: subclasses set self.support_ (a Boolean mask) during fit."""
 
     def get_support(self, indices=False):
         return np.flatnonzero(self.support_) if indices else self.support_
@@ -92,7 +72,7 @@ class _SupportSelector(BaseEstimator, TransformerMixin):
 
 
 class CorrelationFilter(_SupportSelector):
-    """Elimina variables muy correlacionadas (|r| > threshold); deja la primera."""
+    """Removes highly correlated features (|r| > threshold), keeping the first one."""
 
     def __init__(self, threshold=0.95):
         self.threshold = threshold
@@ -113,7 +93,7 @@ class CorrelationFilter(_SupportSelector):
 
 class FilterRanker(_SupportSelector):
     """
-    Filtro de ranking: puntúa cada variable por separado y se queda con las k mejores.
+    Ranking filter: scores each feature individually and keeps the top k features.
     score: 'mutual_info'
     """
 
@@ -139,22 +119,40 @@ class FilterRanker(_SupportSelector):
 
 class FeatureSelection:
     """
-    Fabrica selectores.
+    Creates feature selectors.
 
         fs = FeatureSelection()
-        fs.make("anova", k=50)                          -> un selector
-        fs.catalog(k=50, families=["filter_rank"])      -> {nombre: selector}
+        fs.make("anova", k=50)                          -> a selector
+        fs.catalog(k=50, families=["filter_rank"])      -> {name: selector}
 
-    Cualquier selector que devuelva se puede pasar a Models:
+    Any selector returned by this class can be passed to Models:
         models.random_forest(selector=fs.make("l1_logistic", C=0.1))
+
+    Baseline
+        No selection ................ "none"
+
+    Feature extraction (not feature selection)
+        PCA (k = variance fraction) . "pca_var"
+        LDA (supervised) ............ "lda"
+
+    Filters: individual ranking
+        Statistical distance ........ "anova" (Fisher/F)
+        Information .................. "mutual_info"
+
+    Filters: redundancy
+        Correlation (|r| > threshold) "correlation"
+
+    Embedded methods
+        Direct optimization ......... "l1_logistic"
+        Feature importances .......... "rf", "et"
     """
 
     FAMILIES = {
-        "baseline": "Referencia",
-        "extraction": "Extracción",
-        "filter_rank": "Filtro (ranking)",
-        "filter_subset": "Filtro (redundancia)",
-        "embedded": "Embebido",
+        "baseline": "Baseline",
+        "extraction": "Feature extraction",
+        "filter_rank": "Filter (ranking)",
+        "filter_subset": "Filter (redundancy)",
+        "embedded": "Embedded",
     }
 
     METHODS = {
@@ -167,7 +165,7 @@ class FeatureSelection:
 
     def __init__(self, random_state=42):
         self.random_state = random_state
-        self.family = {}          # nombre en el catálogo -> familia
+        self.family = {}          # Catalog name -> family
 
     def list_methods(self):
         for fam, methods in self.METHODS.items():
@@ -175,35 +173,35 @@ class FeatureSelection:
 
     def make(self, method, k=50, **kwargs):
         """
-        Devuelve un selector para el paso 'selector' del Pipeline.
+        Returns a selector for the 'selector' step of a Pipeline.
 
-        k: nº de variables (anova, mutual_info, rf, et) o fracción de
-           varianza (pca_var). No se usa en correlation, l1_logistic ni lda.
-        kwargs: parámetros específicos (threshold, C, n_components...).
+        k: number of features (anova, mutual_info, rf, et) or fraction of
+           variance (pca_var). Not used for correlation, l1_logistic, or lda.
+        kwargs: method-specific parameters (threshold, C, n_components...).
         """
         rs = self.random_state
 
         if method in ("none", "passthrough"):
             return "passthrough"
 
-        # ---- extracción
+        # ---- Feature extraction
         if method == "pca_var":
             return PCA(n_components=k, svd_solver="full", random_state=rs)
         if method == "lda":
-            # n_components=None -> nº clases - 1 (9 con 10 géneros)
+            # n_components=None -> number of classes - 1 (9 with 10 genres)
             return LinearDiscriminantAnalysis(n_components=kwargs.get("n_components"))
 
-        # ---- filtros de ranking
+        # ---- Ranking filters
         if method == "anova":
             return SelectKBest(_anova_score, k=k)
         if method == "mutual_info":
             return FilterRanker(score="mutual_info", k=k, random_state=rs)
 
-        # ---- filtros de redundancia
+        # ---- Redundancy filters
         if method == "correlation":
             return CorrelationFilter(threshold=kwargs.get("threshold", 0.95))
 
-        # ---- embebidos
+        # ---- Embedded methods
         if method == "l1_logistic":
             return SelectFromModel(_l1_logistic(kwargs.get("C", 0.1), rs))
         if method == "rf":
@@ -221,11 +219,11 @@ class FeatureSelection:
 
     def catalog(self, k=50, families=None):
         """
-        Las técnicas seleccionadas agrupadas por familia.
-        Devuelve {nombre: selector}; listo para models.build_models(..., selectors=...).
+        Selected techniques grouped by family.
+        Returns {name: selector}, ready for models.build_models(..., selectors=...).
 
-        families: subconjunto de {'baseline','extraction','filter_rank',
-                  'filter_subset','embedded'} (por defecto, todas).
+        families: subset of {'baseline', 'extraction', 'filter_rank',
+                  'filter_subset', 'embedded'} (all families by default).
         """
         fam = set(families) if families else set(self.FAMILIES)
         entries = []
@@ -236,18 +234,18 @@ class FeatureSelection:
 
         mk = self.make
 
-        add("baseline", "Sin selección", mk("none"))
+        add("baseline", "No selection", mk("none"))
 
-        add("extraction", "PCA 95% var", mk("pca_var", 0.95))
+        add("extraction", "PCA 95% variance", mk("pca_var", 0.95))
         add("extraction", "LDA", mk("lda"))
 
         add("filter_rank", f"ANOVA k={k}", mk("anova", k))
-        add("filter_rank", f"Info mutua k={k}", mk("mutual_info", k))
+        add("filter_rank", f"Mutual information k={k}", mk("mutual_info", k))
 
-        add("filter_subset", "Correlación <0.95", mk("correlation", threshold=0.95))
+        add("filter_subset", "Correlation <0.95", mk("correlation", threshold=0.95))
 
-        add("embedded", "L1 logística", mk("l1_logistic"))
-        add("embedded", f"RF importancia k={k}", mk("rf", k))
+        add("embedded", "L1 logistic regression", mk("l1_logistic"))
+        add("embedded", f"RF importance k={k}", mk("rf", k))
 
         self.family.update({name: self.FAMILIES[f] for f, name, _ in entries})
         return {name: sel for _, name, sel in entries}

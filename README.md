@@ -1,15 +1,17 @@
 # Lab 1 — Music Genre Classification
 
-Classification of music into 10 genres (blues, classical, country, disco, hip-hop, jazz, metal, pop, reggae, rock) using classical machine learning with scikit-learn. Several algorithms are compared (Logistic Regression, k-NN, Decision Tree, MLP, Random Forest, Extra Trees, Gradient Boosting, AdaBoost and a Voting Ensemble), combined with different feature selection techniques. All of them are evaluated with 10-fold cross-validation and a held-out test set, and each one is checked for overfitting.
+Anna Casanovas Poirier.
 
-> ## 📓 Where are the results?
+Classification of music into 10 genres using classical machine learning. Several algorithms are compared (Logistic Regression, k-NN, Decision Tree, MLP, Random Forest, Extra Trees, Gradient Boosting, AdaBoost and a Voting Ensemble), combined with different feature selection techniques. All of them are evaluated with 10-fold cross-validation and a held-out test set, and each one is checked for overfitting.
+
+> ## Results
 >
 > **All the results, plots, discussion and conclusions of the lab are in the two notebooks:**
 >
 > | Notebook | Content |
 > |---|---|
 > | [`task_1.ipynb`](task_1.ipynb) | **Task 1**: models trained on the Essentia descriptors (`GenreAll.csv`), hyperparameter tuning, feature selection, overfitting analysis and final model. |
-> | [`task_2.ipynb`](task_2.ipynb) | **Task 2**: models trained on `features_30_sec.csv` and `features_3_sec.csv`, plus the research questions (including the mandatory question 5). |
+> | [`task_2.ipynb`](task_2.ipynb) | **Task 2**: models trained on `features_30_sec.csv` and `features_3_sec.csv`, plus the research questions. |
 >
 > The `.py` files only contain the reusable code (classes) that the notebooks call. They do not produce any results by themselves.
 
@@ -59,7 +61,7 @@ music-genre-classification/
 
 ### Notebooks
 
-**`task_1.ipynb`** — Task 1. It loads and preprocesses `GenreAll.csv`, then defines the hyperparameter grid for every model × feature-selector combination and runs the grid search. It saves all the results to `results/`, re-evaluates the tuned model of each algorithm with 10-fold CV, and analyses overfitting with train vs validation gaps, validation curves (Logistic Regression, KNN, Decision Tree, Random Forest), learning curves (Voting Ensemble, Decision Tree) and a sweep of the number of selected features. At the end it evaluates the models on the test set and selects the final model.
+**`task_1.ipynb`** — Task 1. It loads and preprocesses `GenreAll.csv`, then defines the hyperparameter grid for every model × feature-selector combination and runs the grid search. It saves all the results to `results/`, re-evaluates the tuned model of each algorithm with 10-fold CV, and analyses overfitting with train vs validation gaps, validation curves (Logistic Regression, KNN, Decision Tree, Random Forest), learning curves (Voting Ensemble, Decision Tree). At the end it evaluates the models on the test set and selects the final model.
 
 **`task_2.ipynb`** — Task 2. It preprocesses the 30 s and 3 s datasets so that **both use exactly the same test songs**, and it checks this with an audit function. It then compares models and selectors on the 30 s features, tunes the best one with nested CV, and answers the research questions: data leakage in the 3 s dataset (Q5), whether 3 seconds are enough (Q1), and whether aggregating the 3 s segments beats the 30 s window (Q2), with per-genre analysis and confusion matrices.
 
@@ -115,8 +117,6 @@ With `groups=` (song IDs), cross-validation uses `StratifiedGroupKFold`, so segm
 | `features_30_sec.csv` | 1,000 songs | 58 | Descriptors computed over the whole 30 s clip (MFCCs, chroma, spectral centroid, tempo…). Used in Task 2. |
 | `features_3_sec.csv` | 9,990 segments | 58 | The same descriptors computed on 3 s windows (10 per song). Used in Task 2. |
 
-The audio comes from the GTZAN dataset: 1,000 clips of 30 s, 100 per genre.
-
 ### `results/` (Task 1)
 
 | File | Content |
@@ -127,38 +127,3 @@ The audio comes from the GTZAN dataset: 1,000 clips of 30 s, 100 per genre.
 | `best_per_model_selector.csv` | Best configuration of each selector within each algorithm. |
 | `test_best_per_model.csv` | CV accuracy, test accuracy and test macro-F1 of the best configuration of each algorithm. |
 | `pipelines/*.joblib` | Tuned pipelines trained on the full training set, which can be loaded with `joblib.load()`. |
-
----
-
-## How to run
-
-### Google Colab
-
-Add this cell at the top of the notebook so that the modules and datasets are available:
-
-```python
-!git clone https://github.com/annacp04/music-genre-classification.git
-%cd music-genre-classification
-```
-
-Then run the cells in order. The notebooks are independent: `task_1.ipynb` and `task_2.ipynb` can be run in any order.
-
-### Locally
-
-```bash
-git clone https://github.com/annacp04/music-genre-classification.git
-cd music-genre-classification
-pip install numpy pandas scikit-learn scipy matplotlib seaborn joblib
-jupyter notebook
-```
-
-Developed with Python 3.12 and scikit-learn. `FeatureSelection.py` works with versions both before and after 1.8, which changed how the L1 penalty is specified.
-
----
-
-## Methodological notes
-
-- **No data leakage.** The test set (20%) is set aside before any training and used only once, at the end. Scaling and feature selection are fitted inside each CV fold.
-- **Split by song in the 3 s dataset.** All segments of a song belong to the same partition, both in the train/test split and in the CV folds. Task 2 (Q5) measures how much accuracy would be inflated otherwise.
-- **Same test songs in Task 2.** The 30 s and 3 s datasets share the same 200 test songs, so their results can be compared directly.
-- **Known GTZAN limitations.** The dataset contains some repeated recordings and many songs by the same artist. Grouping by song does not remove these effects, so the reported accuracies may still be slightly optimistic.

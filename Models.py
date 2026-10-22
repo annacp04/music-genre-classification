@@ -48,27 +48,27 @@ from FeatureSelection import *
 
 class Models:
     """
-    Único sitio donde se construyen, entrenan y evalúan pipelines:
+    Single place where pipelines are built, trained, and evaluated:
 
-        imputer -> scaler -> selector -> modelo
+        imputer -> scaler -> selector -> model
 
-    El selector viene de FeatureSelection (feature_selection.py). Puedes
-    combinar varios modelos con varios selectores y Models los evalúa todos
-    con la misma CV sobre el TRAIN, midiendo también el overfitting
-    (accuracy en train vs validación).
+    The selector comes from FeatureSelection (feature_selection.py). You can
+    combine multiple models with multiple selectors, and Models evaluates all
+    combinations using the same CV on the TRAIN set, also measuring overfitting
+    (training accuracy vs. validation accuracy).
 
-    Modelos: "logistic", "knn", "tree", "ann", "random_forest", "extra_trees",
-             "gradient_boosting", "adaboost", "voting"
+    Models: "logistic", "knn", "tree", "ann", "random_forest", "extra_trees",
+            "gradient_boosting", "adaboost", "voting"
 
-    Flujo típico:
+    Example:
         fs = models.fs
         models.build_models(
             ["logistic", "random_forest"],
-            selectors={"Sin selección": "passthrough",
+            selectors={"No selection": "passthrough",
                        "ANOVA k=50": fs.make("anova", 50)},
         )
-        models.evaluate_all()          # todas las combinaciones
-        models.best_per_model()        # mejor selector para cada modelo
+        models.evaluate_all()          # all combinations
+        models.best_per_model()        # best selector for each model
         models.grid_search("Random Forest | ANOVA k=50",
                            {"selector__k": [30, 50, 100],
                             "model__min_samples_leaf": [1, 3, 5]})
@@ -106,12 +106,12 @@ class Models:
         fold_ids=None,
     ):
         """
-        groups:   id de canción de cada fila (Preprocessing.get_groups()[0]). Con él,
-                  la CV mantiene todos los segmentos de una canción en el mismo fold.
-        cv_mode:  "group" (por canción, sin leakage) | "random" (folds por segmento,
-                  CON leakage: solo para medir cuánto infla; ver leakage_check()).
-        fold_ids: fold de cada fila impuesto desde fuera (ver make_song_folds) para
-                  validar varios datasets con las mismas canciones.
+        groups:   Song ID for each row (Preprocessing.get_groups()[0]). This ensures
+                  that all segments belonging to the same song stay in the same fold.
+        cv_mode:  "group" (by song, without leakage) | "random" (folds by segment,
+                  WITH leakage: only to measure how much it inflates; see leakage_check()).
+        fold_ids: Fold assigned to each row externally (see make_song_folds) to
+                  validate multiple datasets using the same songs.
         """
         if isinstance(X_train, pd.DataFrame):
             self.X = X_train.reset_index(drop=True).copy()
@@ -140,7 +140,7 @@ class Models:
         if n_splits < 2:
             raise ValueError("n_splits must be at least 2.")
 
-        # --- grupos (segmentos de una misma canción) ----------------------
+        # --- Groups (segments belonging to the same song) ----------------------
         if cv_mode not in ("group", "random"):
             raise ValueError("cv_mode must be 'group' or 'random'.")
         self.groups = (
@@ -152,7 +152,7 @@ class Models:
         if fold_ids is not None and len(fold_ids) != len(self.y):
             raise ValueError("fold_ids and y must have the same number of rows.")
 
-        # el mínimo por clase se cuenta en canciones, no en segmentos
+        # The minimum count per class is calculated by song, not by segment.
         y_units = self.y if self.groups is None else self.y.groupby(self.groups).first()
         min_count = y_units.value_counts().min()
         if min_count < n_splits:
@@ -169,7 +169,7 @@ class Models:
         self.cv_mode = cv_mode
         self._use_groups = self.groups is not None and cv_mode == "group"
         if fold_ids is not None:
-            # folds impuestos desde fuera (p. ej. los mismos en 3 s y 30 s)
+            # Folds assigned externally (e.g., the same folds for 3 s and 30 s).
             self.cv = PredefinedSplit(np.asarray(fold_ids))
             self.n_splits = self.cv.get_n_splits()
         elif self._use_groups:
@@ -180,12 +180,12 @@ class Models:
             self.cv = StratifiedKFold(
                 n_splits=n_splits, shuffle=True, random_state=random_state
             )
-        # kwargs de groups para cross_validate / cv.split (vacío si no hacen falta)
+        # Groups arguments for cross_validate / cv.split (empty when not needed).
         self._gkw = (
             {"groups": self.groups} if self._use_groups and fold_ids is None else {}
         )
 
-        # Catálogo de selectores: models.fs.make(...), models.fs.catalog(...)
+        # Selector catalog: models.fs.make(...), models.fs.catalog(...)
         self.fs = FeatureSelection(random_state=random_state)
 
         self.models = {}
@@ -196,11 +196,9 @@ class Models:
 
         self.build_models(models, selectors)
 
-    # ------------------------------------------------------------------
     # Pipeline
-    # ------------------------------------------------------------------
     def _resolve_selector(self, selector):
-        """None / 'passthrough' / 'none' -> sin selección; texto -> fs.make(texto)."""
+        """None / 'passthrough' / 'none' -> no selection; string -> fs.make(string)."""
         if selector is None:
             return "passthrough"
         if isinstance(selector, str):
@@ -213,8 +211,8 @@ class Models:
         """
         scaler -> selector -> model
 
-        El scaler y el selector se ajustan dentro de cada fold
-        (solo con su parte de train), así que no hay data leakage.
+        The scaler and selector are fitted inside each fold
+        (using only its training portion), preventing data leakage.
         """
         selector = self._resolve_selector(selector)
         has_selector = not isinstance(selector, str)
@@ -228,11 +226,7 @@ class Models:
         steps.append(("model", estimator))
         return Pipeline(steps)
 
-    # ------------------------------------------------------------------
-    # Un método por modelo. Hiperparámetros como keywords, más:
-    #   selector=...  -> selector de FeatureSelection (o su nombre, p. ej. "anova")
-    #   scale / scaler
-    # ------------------------------------------------------------------
+    # One method per model. Hyperparameters are passed as keywords, along with selector and scaler.
     def logistic(self, selector=None, scale=True, scaler=None, **params):
         params = {"max_iter": 3000, "random_state": self.random_state, **params}
         return self._make_pipeline(LogisticRegression(**params), selector, scale, scaler)
@@ -312,9 +306,9 @@ class Models:
         **params,
     ):
         """
-        members: lista de claves o dict {clave: {hiperparámetros}}.
-        El selector se aplica UNA vez antes del voting: todos los miembros
-        reciben las mismas variables.
+        members: List of model keys or a dictionary {key: {hyperparameters}}.
+        The selector is applied ONCE before voting: all members
+        receive the same features.
         """
         if not isinstance(members, dict):
             members = {m: {} for m in members}
@@ -331,9 +325,7 @@ class Models:
             VotingClassifier(estimators=estimators, **params), selector, scale, scaler
         )
 
-    # ------------------------------------------------------------------
-    # Elegir qué se compara
-    # ------------------------------------------------------------------
+    # Choose which models to compare
     def _resolve_model_key(self, key):
         if key not in self.AVAILABLE_MODELS:
             raise ValueError(
@@ -346,20 +338,20 @@ class Models:
 
     def build_models(self, selection=None, selectors=None, append=False):
         """
-        Crea todas las combinaciones modelo x selector.
+        Creates all model x selector combinations.
 
         selection:
-            None                         -> todos los modelos, parámetros por defecto
-            ["knn", "logistic"]          -> esos, parámetros por defecto
-            {"knn": {"n_neighbors": 9}}  -> esos, con tus hiperparámetros
+            None                         -> all models, default parameters
+            ["knn", "logistic"]          -> those models, default parameters
+            {"knn": {"n_neighbors": 9}}  -> those models, with your hyperparameters
         selectors:
-            None                         -> sin selección (nombres = solo el modelo)
-            {"ANOVA k=50": fs.make("anova", 50), "Sin selección": "passthrough"}
+            None                         -> no selection (names = model only)
+            {"ANOVA k=50": fs.make("anova", 50), "No selection": "passthrough"}
             models.fs.catalog(k=50, families=[...])
-            ["anova", "pca"]             -> nombres de método con k por defecto
-        append: True añade a lo que ya hubiera en lugar de reemplazarlo.
+            ["anova", "pca"]             -> method names with default k
+        append: True adds to existing models instead of replacing them.
 
-        Nombres resultantes: "Random Forest | ANOVA k=50".
+        Resulting names: "Random Forest | ANOVA k=50".
         """
         if selection is None:
             selection = {key: {} for key in self.AVAILABLE_MODELS}
@@ -368,7 +360,7 @@ class Models:
 
         plain = selectors is None
         if plain:
-            selectors = {"Sin selección": "passthrough"}
+            selectors = {"No selection": "passthrough"}
         elif not isinstance(selectors, dict):
             selectors = {s: s for s in selectors}
 
@@ -398,7 +390,7 @@ class Models:
 
     def add_model(self, name, pipeline, model=None, selector=None):
         """
-        Añade un pipeline ya construido (p. ej. otra configuración del mismo modelo):
+        Adds an already-built pipeline (e.g., another configuration of the same model):
             models.add_model("RF leaf=5 | ANOVA",
                              models.random_forest(selector="anova", min_samples_leaf=5),
                              model="Random Forest", selector="ANOVA k=50")
@@ -425,9 +417,7 @@ class Models:
             raise KeyError(f"'{name}' not found. Available: {list(self.models)}")
         return self.models[name]
 
-    # ------------------------------------------------------------------
-    # CV con train y validación
-    # ------------------------------------------------------------------
+    # Cross-validation with training and validation metrics
     @staticmethod
     def _n_selected(fitted_pipe, n_total):
         sel = fitted_pipe.named_steps["selector"]
@@ -464,15 +454,13 @@ class Models:
             "N features": n_feat,
         }
 
-    # ------------------------------------------------------------------
-    # Evaluación de todas las combinaciones
-    # ------------------------------------------------------------------
+    # Evaluate all combinations
     def evaluate_all(self, names=None):
         """
-        Evalúa con la misma CV todos los pipelines (o solo `names`).
-        Train Acc = accuracy en los folds de entrenamiento
-        Val Acc   = accuracy en el fold de validación (NO es el test)
-        Gap       = Train - Val  -> cuanto mayor, más overfitting
+        Evaluates all pipelines using the same CV (or only `names`).
+        Train Acc = accuracy on the training folds
+        Val Acc   = accuracy on the validation fold (NOT the test set)
+        Gap       = Train - Val -> the larger it is, the greater the overfitting
         """
         if not self.models:
             raise RuntimeError("No models. Use build_models() or add_model().")
@@ -512,7 +500,7 @@ class Models:
             raise RuntimeError("Run evaluate_all() first.")
 
     def best_per_model(self):
-        """La mejor combinación (selector) de cada modelo, según Val Acc."""
+        """The best selector combination for each model, based on Val Acc."""
         self._require_results()
         best = (
             self.results.sort_values("Val Acc", ascending=False)
@@ -526,11 +514,9 @@ class Models:
         )
         return best
 
-    # ------------------------------------------------------------------
-    # Gráficos
-    # ------------------------------------------------------------------
+    # Plots
     def plot_results(self, metric="Val Acc"):
-        """Barras horizontales de 'Val Acc' o 'Val F1' con su desviación."""
+        """Horizontal bars for 'Val Acc' or 'Val F1', including their standard deviations."""
         self._require_results()
         d = self.results.sort_values(metric, ascending=True)
         std_col = f"{metric} Std"
@@ -549,7 +535,7 @@ class Models:
         self.plot_results("Val F1")
 
     def plot_gap(self, top=None):
-        """Train vs validación por pipeline: la distancia entre barras es el overfitting."""
+        """Training vs. validation for each pipeline: the distance between bars indicates overfitting."""
         self._require_results()
         d = self.results.head(top) if top else self.results
         d = d.iloc[::-1]
@@ -566,7 +552,7 @@ class Models:
         plt.show()
 
     def plot_grid(self):
-        #Heatmaps selector x modelo de Val Acc y Gap.
+        # Heatmaps of Val Acc and Gap for each selector x model combination.
         self._require_results()
         fig, axes = plt.subplots(
             1, 2, figsize=(14, 0.45 * self.results["Selector"].nunique() + 2)
@@ -580,9 +566,7 @@ class Models:
         plt.tight_layout()
         plt.show()
 
-    # ------------------------------------------------------------------
-    # Análisis de overfitting y selección
-    # ------------------------------------------------------------------
+    # Overfitting and feature selection analysis
     def sweep_k(
         self,
         model_key,
@@ -593,8 +577,8 @@ class Models:
         **selector_kwargs,
     ):
         """
-        Train y validación en función del nº de variables k para un modelo
-        y un método de selección. Ej.: models.sweep_k("logistic", "anova").
+        Training and validation performance as a function of the number of features k
+        for a model and selection method. Example: models.sweep_k("logistic", "anova").
         """
         method_name, display = self._resolve_model_key(model_key)
         model_params = model_params or {}
@@ -634,7 +618,7 @@ class Models:
         return df
 
     def learning_curve(self, name):
-        """Si train >> validación y no converge al añadir datos, hay overfitting."""
+        """If training performance is much higher than validation and does not converge as data is added, overfitting is likely."""
         sizes, tr, va = learning_curve(
             self._get(name), self.X, self.y,
             cv=self.cv, train_sizes=np.linspace(0.1, 1.0, 8),
@@ -662,7 +646,7 @@ class Models:
 
     def validation_curve(self, name, param_name, param_range, log_x=False):
         """
-        Curva de un hiperparámetro: 'model__C', 'model__max_depth',
+        Curve for a hyperparameter: 'model__C', 'model__max_depth',
         'model__min_samples_leaf', 'selector__k', ...
         """
         tr, va = validation_curve(
@@ -697,8 +681,8 @@ class Models:
 
     def paired_comparison(self, name_a, name_b):
         """
-        ¿A es realmente mejor que B? t-test pareado corregido (Nadeau & Bengio)
-        sobre los mismos folds. Con p > 0.05 la diferencia puede ser ruido.
+        Is A actually better than B? Corrected paired t-test (Nadeau & Bengio)
+        on the same folds. With p > 0.05, the difference may be due to noise.
         """
         def fold_scores(name):
             return cross_val_score(
@@ -730,9 +714,9 @@ class Models:
     def feature_stability(self, selector="anova", k=50, threshold=0.8, top=30,
                           plot=True, **selector_kwargs):
         """
-        Repite la selección en cada fold y cuenta cuántas veces sale cada variable.
-        Las elegidas en >= threshold de los folds son estables.
-        selector: nombre de método o selector ya construido. No vale para PCA / LDA.
+        Repeats feature selection in each fold and counts how often each feature is selected.
+        Features selected in >= threshold of the folds are considered stable.
+        selector: method name or an already-built selector. Not suitable for PCA / LDA.
         """
         counts = np.zeros(self.X.shape[1])
 
@@ -778,20 +762,20 @@ class Models:
     def grid_search(self, name, param_grid, nested=True, inner_splits=5,
                     scoring="accuracy", set_best=True):
         """
-        Grid search sobre un pipeline existente (un nombre de self.models).
+        Grid search over an existing pipeline (a name in self.models).
 
-        param_grid con prefijos del pipeline:
+        param_grid with pipeline prefixes:
             {"model__C": [0.01, 0.1, 1], "selector__k": [30, 50, 100]}
-        También puedes cambiar el selector entero dentro del grid:
+        You can also change the entire selector within the grid:
             [{"selector": [fs.make("anova")], "selector__k": [30, 50]},
              {"selector": ["passthrough"]}]
 
-        nested=True: CV anidada (interna elige parámetros, externa mide).
-                     `nested_mean` es el número honesto para reportar.
-        nested=False: más rápido, pero best_inner_cv_score es optimista.
+        nested=True: nested CV (the inner CV selects parameters, the outer CV evaluates).
+                     `nested_mean` is the honest score to report.
+        nested=False: faster, but best_inner_cv_score is optimistic.
 
-        set_best=True: el pipeline ganador (entrenado con todo el train)
-        queda en self.best_model, listo para evaluate_on_test().
+        set_best=True: the winning pipeline (trained on the entire training set)
+        is stored in self.best_model, ready for evaluate_on_test().
         """
         base = clone(self._get(name))
         Inner = StratifiedGroupKFold if self._use_groups else StratifiedKFold
@@ -805,7 +789,7 @@ class Models:
 
         summary = {}
         if nested:
-            # Bucle manual: así los grupos llegan también al GridSearchCV interno
+            # Manual loop: this also passes the groups to the inner GridSearchCV.
             scorer, scores, chosen = get_scorer(scoring), [], []
             for tr, va in self.cv.split(self.X, self.y, **self._gkw):
                 g = clone(gs).set_params(n_jobs=self.n_jobs)
@@ -843,18 +827,16 @@ class Models:
 
         return final.best_estimator_, summary
 
-    # ------------------------------------------------------------------
-    # Probabilidades out-of-fold, leakage y métricas por canción
-    # ------------------------------------------------------------------
+    # Out-of-fold probabilities, leakage, and per-song metrics
     def _sub(self, idx):
-        """groups de un subconjunto de filas, para GridSearchCV.fit(..., groups=...)."""
+        """Groups for a subset of rows, for GridSearchCV.fit(..., groups=...)."""
         return {"groups": self.groups.iloc[idx]} if self._use_groups else {}
 
     def oof_proba(self, name):
         """
-        Probabilidad de cada segmento predicha por un modelo que NO lo vio
-        (out-of-fold), más el fold de cada fila. Es la entrada de SongAnalysis.
-        Devuelve (proba[n_filas, n_clases], folds[n_filas]).
+        Probability for each segment predicted by a model that has NOT seen it
+        (out-of-fold), along with the fold assigned to each row. This is the input for SongAnalysis.
+        Returns (proba[n_rows, n_classes], folds[n_rows]).
         """
         proba = cross_val_predict(
             self._get(name), self.X, self.y, cv=self.cv,
@@ -867,12 +849,12 @@ class Models:
 
     @staticmethod
     def aggregate_by_song(proba, groups, classes, how="mean"):
-        """proba (n_segmentos, n_clases) -> Serie {canción: clase predicha}. how: mean|sum|max|vote."""
+        """proba (n_segments, n_classes) -> Series {song: predicted class}. how: mean|sum|max|vote."""
         P = pd.DataFrame(np.asarray(proba), columns=classes)
         g = pd.Series(np.asarray(groups))
-        if how == "vote":                     # voto mayoritario de las predicciones duras
+        if how == "vote":                     # Majority vote of hard predictions
             S = pd.crosstab(g, P.idxmax(axis=1)).reindex(columns=classes, fill_value=0)
-        else:                                 # "mean" | "sum" | "max" sobre las probabilidades
+        else:                                 # "mean" | "sum" | "max" over probabilities
             S = getattr(P.groupby(g), how)()
         return S.idxmax(axis=1)
 
@@ -886,7 +868,7 @@ class Models:
         return out
 
     def cv_by_song(self, name, hows=("mean", "max", "vote")):
-        """CV (por canción) con accuracy por segmento y por canción (varias agregaciones)."""
+        """Cross-validation by song, reporting accuracy per segment and per song (using several aggregation methods)."""
         if self.groups is None:
             raise RuntimeError("cv_by_song() needs groups.")
         rows = []
@@ -902,7 +884,7 @@ class Models:
         return df
 
     def evaluate_on_test_by_song(self, X_test, y_test, groups_test, hows=("mean", "max", "vote")):
-        """Como evaluate_on_test, pero con accuracy por segmento y por canción."""
+        """Like evaluate_on_test, but reports accuracy per segment and per song."""
         if self.best_model is None:
             raise RuntimeError("Run fit_best() or grid_search() first.")
         scores = self._song_scores(
@@ -913,11 +895,11 @@ class Models:
         print(pd.Series(scores).round(4))
         return scores
 
-    # Final Model
+    # Final model
 
     def fit_best(self, name=None):
         """
-        We retrain the best model and hyperparameters with the full train set
+        Retrains the best model and its hyperparameters using the full training set.
         """
         if name is None:
             self._require_results()
@@ -941,17 +923,17 @@ class Models:
 
     def predict(self, X_new, decode=True):
         """
-        We take the best model and do the prediction
+        Uses the best model to make predictions.
         """
         if self.best_model is None:
             raise RuntimeError("Run fit_best() or grid_search() first.")
-        
+
         predictions = self.best_model.predict(self._align(X_new))
         return self._class_names(predictions) if decode else predictions
 
     def evaluate_on_test(self, X_test, y_test):
         """
-        We evaluate the best model with the final 20% test
+        Evaluates the best model on the final 20% test set.
         """
         if self.best_model is None:
             raise RuntimeError("Run fit_best() or grid_search() first.")

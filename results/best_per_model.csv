@@ -1,10 +1,10 @@
-Model,Selector,mean_test_score,std_test_score,rank_test_score,model__C,selector__estimator__C,selector__n_components,selector__k,model__n_neighbors,model__weights,model__criterion,model__max_depth,model__min_samples_leaf,selector__max_features,selector__threshold,model__alpha,model__hidden_layer_sizes,model__max_features,model__learning_rate,model__subsample,model__estimator__max_depth,model__n_estimators,model__voting
-Voting Ensemble,Sin selección,0.8202106810387064,0.02561682329622786,1,,,,,,,,,,,,,,,,,,,soft
-Logistic Regression,L1 logística,0.8112118242691491,0.013296092929257479,1,0.1,0.1,,,,,,,,,,,,,,,,,
-Extra Trees,Correlación,0.8048423975175568,0.034346576736296146,1,,,,,,,,,1.0,,0.9,,,0.2,,,,,
-Random Forest,Sin selección,0.7984729707659645,0.04548619249638499,1,,,,,,,,,3.0,,,,,0.2,,,,,
-Gradient Boosting,Correlación,0.792062714355708,0.022213111533168014,1,,,,,,,,,,,0.9,,,,0.1,0.8,,,
-KNN,LDA,0.7882982198268824,0.030846195075064767,1,,,,,7.0,uniform,,,,,,,,,,,,,
-ANN (MLP),Sin selección,0.7832026784256083,0.024531584297597678,1,,,,,,,,,,,,0.001,"(128, 64)",,,,,,
-AdaBoost,Sin selección,0.760223746529479,0.019334877854955846,1,,,,,,,,,,,,,,,0.5,,3.0,200.0,
-Decision Tree,RF importancia,0.6224971419238935,0.03103153337418344,1,,,,,,,entropy,10.0,1.0,50.0,,,,,,,,,
+Model,Selector,mean_test_score,std_test_score,rank_test_score,model__C,selector__n_components,selector__estimator__C,selector__k,model__n_neighbors,model__weights,model__criterion,model__max_depth,model__min_samples_leaf,selector__max_features,selector__threshold,model__alpha,model__hidden_layer_sizes,model__max_features,model__learning_rate,model__subsample,model__estimator__max_depth,model__n_estimators,model__voting
+Voting Ensemble,Sin selección,0.836741317753976,0.038685143025012296,1,,,,,,,,,,,,,,,,,,,soft
+Logistic Regression,PCA var,0.8214540733528077,0.04496686710101029,1,0.1,0.99,,,,,,,,,,,,,,,,,
+Gradient Boosting,Sin selección,0.8150438169425511,0.03139113672490384,1,,,,,,,,,,,,,,,0.1,0.8,,,
+Extra Trees,Sin selección,0.8112301200908796,0.05376380388349444,1,,,,,,,,,1.0,,,,,0.2,,,,,
+Random Forest,Sin selección,0.8061830574488802,0.06387706589474285,1,,,,,,,,,1.0,,,,,0.2,,,,,
+ANN (MLP),Sin selección,0.7946932814021421,0.050377471846108884,1,,,,,,,,,,,,0.001,"(128, 64)",,,,,,
+KNN,LDA,0.7946283674131777,0.05952927129464075,1,,,,,9.0,distance,,,,,,,,,,,,,
+AdaBoost,Sin selección,0.7449204803635183,0.0578901137476871,1,,,,,,,,,,,,,,,0.1,,3.0,200.0,
+Decision Tree,Sin selección,0.6032294709509898,0.06625439573803653,1,,,,,,,entropy,,1.0,,,,,,,,,,
